@@ -1,11 +1,16 @@
 const express = require("express");
+require("./db");
+
+const userRouter = require("./routes/user.routes");
 
 const app = express();
 
-app.get("/", (req, res) => {
-  res.send("<h2>Hello express </h2>");
-});
+const PORT = process.env.PORT || 8000;
 
-app.listen(8000, () => {
-  console.log("app is running");
+app.use(express.json());
+
+app.use("/api/user", userRouter);
+
+app.listen(PORT, () => {
+  console.log(`app is running on port ${PORT}`);
 });
