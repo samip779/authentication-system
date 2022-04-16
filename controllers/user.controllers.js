@@ -2,7 +2,12 @@ const { sendError } = require("../utils/helper");
 const User = require("./../model/user");
 const VerificationToken = require("./../model/verificationToken");
 const jwt = require("jsonwebtoken");
-const { generateOTP, mailTransport } = require("../utils/mail");
+const {
+  generateOTP,
+  mailTransport,
+  generateEmailTemplate,
+} = require("../utils/mail");
+const { isValidObjectId } = require("mongoose");
 
 exports.createUser = async (req, res) => {
   const { name, email, password } = req.body;
@@ -28,7 +33,7 @@ exports.createUser = async (req, res) => {
     from: "emailverification@email.com",
     to: newUser.email,
     subject: "Verify Your Email Address",
-    html: `<h1> ${OTP} </h1>`,
+    html: generateEmailTemplate(OTP),
   });
 
   res.send(newUser);
@@ -53,5 +58,41 @@ exports.signIn = async (req, res) => {
   res.json({
     success: true,
     user: { name: user.name, email: user.email, id: user._id, token },
+  });
+};
+
+exports.verifyEmail = async (req, res) => {
+  const { userId, otp } = req.body;
+  if (!userId || !otp.trim())
+    return sendError(res, "Invalid request, missing parameters");
+
+  if (!isValidObjectId(userId)) return sendError(res, "Invalid user id");
+
+  const user = await User.findById(userId);
+  if (!user) return sendError(res, "User not found");
+  if (user.verified) return sendError(res, "This account is already verified");
+
+  const token = await VerificationToken.findOne({ owner: user._id });
+  if (!token) return sendError(res, "User not found");
+
+  const isMatched = await token.compareToken(otp);
+  if (!isMatched) return sendError(res, "Plears provide a valid token");
+
+  user.verified = true;
+
+  await VerificationToken.findByIdAndDelete(token._id);
+  await user.save();
+
+  mailTransport().sendMail({
+    from: "emailverification@email.com",
+    to: user.email,
+    subject: "Welcome Email",
+    html: "<h1>Email Verified Successfully </h1>",
+  });
+
+  res.json({
+    success: true,
+    message: "your email is verified",
+    user: { name: user.name, email: user.email, id: user._id },
   });
 };
