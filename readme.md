@@ -61,7 +61,7 @@ MAILTRAP_PORT
 
 #### Verify Email
 
-```
+```http
 POST /api/user/verify-email
 
 ```
