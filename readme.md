@@ -36,7 +36,7 @@ To run this project, you will need to add the following environment variables to
 
 Mail trap is used for fake email testing for development phase of the api. You can signup and us it
 [HERE](https://mailtrap.io).
-You will get followings credentials after signing up which should be kept in your .env file.
+You will get followings credentials after signing up which should be stored in your .env file.
 
 ```
 MAILTRAP_USERNAME
