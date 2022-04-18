@@ -128,3 +128,32 @@ exports.forgotPassword = async (req, res) => {
     message: "Password reset link is sent to your email.",
   });
 };
+
+exports.resetPassword = async (req, res) => {
+  const { password } = req.body;
+
+  const user = await User.findById(req.user._id);
+  if (!user) return sendError(res, "User not found");
+
+  const isSamePassword = await user.comparePassword(password);
+  if (isSamePassword)
+    return sendError(res, "New password must be different from previous one");
+
+  if (password.trim().length < 8 || password.trim().length > 20)
+    return sendError(res, "Password must be 8-20 characters long");
+
+  user.password = password.trim();
+
+  await user.save();
+
+  await ResetToken.findOneAndDelete({ owner: user._id });
+
+  mailTransport().sendMail({
+    from: "security@email.com",
+    to: user.email,
+    subject: "Password Reset Successfully",
+    html: "<h1>password reset successfully </h1>",
+  });
+
+  res.json({ success: true, message: "password reset successfully" });
+};
