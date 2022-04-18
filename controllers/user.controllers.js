@@ -1,6 +1,8 @@
-const { sendError } = require("../utils/helper");
+const { sendError, createRandomBytes } = require("../utils/helper");
 const User = require("./../model/user");
 const VerificationToken = require("./../model/verificationToken");
+const ResetToken = require("../model/resetToken");
+const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const {
   generateOTP,
@@ -94,5 +96,35 @@ exports.verifyEmail = async (req, res) => {
     success: true,
     message: "your email is verified",
     user: { name: user.name, email: user.email, id: user._id },
+  });
+};
+
+exports.forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return sendError(res, "Email Missing");
+
+  const user = await User.findOne({ email });
+  if (!user) return sendError(res, "User not found");
+
+  const token = await ResetToken.findOne({ owner: user._id });
+  if (token) return sendError(res, "You can get another token after 1 hour");
+
+  const randomBytes = await createRandomBytes();
+  const resetToken = new ResetToken({ owner: user._id, token: randomBytes });
+  await resetToken.save();
+
+  mailTransport().sendMail({
+    from: "security@email.com",
+    to: user.email,
+    subject: "Password Reset",
+    html: `<h1> 
+              <a href="http://localhost:3000/reset-password?token=${randomBytes}&id=${user._id}">
+              Click Here </a> 
+              </h1>`,
+  });
+
+  res.json({
+    success: true,
+    message: "Password reset link is sent to your email.",
   });
 };
