@@ -50,17 +50,17 @@ MAILTRAP_PORT
 #### create new user
 
 ```http
-  POST /api/user/create
+POST /api/user/create
 ```
 
 #### SignIn
 
 ```http
-  POST /api/user/signin
+POST /api/user/signin
 ```
 
 #### Verify Email
 
 ```http
-  POST /api/user/verify-email
+POST /api/user/verify-email
 ```
